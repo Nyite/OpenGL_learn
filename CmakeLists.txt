@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 4.2)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+project(OPENGL_LEARN)
+
+include(cmake/Dependencies.cmake)
+load_dependencies()
+
+file(GLOB_RECURSE SRC_FILES src/*)
+add_executable(OPENGL_LEARN ${SRC_FILES})
+
+target_link_system_library(OPENGL_LEARN PRIVATE fmt)
+target_link_system_library(OPENGL_LEARN PRIVATE glfw)
+target_link_system_library(OPENGL_LEARN PRIVATE glad)
+
+include(cmake/ProjectOptions.cmake)
+apply_project_options(OPENGL_LEARN)
+
+if(STX_BUILD_TESTS)
+    include(CTest)
+    enable_testing()
+    # add_subdirectory(ut)
+endif()
