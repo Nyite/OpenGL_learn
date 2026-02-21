@@ -22,14 +22,14 @@ function(load_dependencies)
 
     # Load GLAD
     CPMAddPackage(
-        NAME GLAD
+        NAME glad
         GITHUB_REPOSITORY Dav1dde/glad
         GIT_TAG master
     )
 
     # Load GTest
     CPMAddPackage(
-        NAME gtest
+        NAME googletest
         GITHUB_REPOSITORY google/googletest
         GIT_TAG release-1.8.1
         VERSION 1.8.1

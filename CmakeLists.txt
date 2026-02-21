@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 4.2)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+add_definitions(-D_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
+add_definitions(-D_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -18,6 +20,9 @@ target_link_system_library(OPENGL_LEARN PRIVATE glad)
 
 include(cmake/ProjectOptions.cmake)
 apply_project_options(OPENGL_LEARN)
+
+include(cmake/CopyAssets.cmake)
+copy_assets(OPENGL_LEARN)
 
 if(STX_BUILD_TESTS)
     include(CTest)

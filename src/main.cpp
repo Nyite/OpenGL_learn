@@ -89,9 +89,9 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
     glEnableVertexAttribArray(0);
 
-    TShader<EShaderVariant::Vertex> vertex_shader("../assets/shaders/vertex_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_1("../assets/shaders/fragment_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_2("../assets/shaders/fragment_shader_new.glsl");
+    TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
+    TShader<EShaderVariant::Fragment> fragment_shader_1("assets/shaders/fragment_shader.glsl");
+    TShader<EShaderVariant::Fragment> fragment_shader_2("assets/shaders/fragment_shader_new.glsl");
 
     TShaderProgram shader_program_1(vertex_shader, fragment_shader_1);
     TShaderProgram shader_program_2(vertex_shader, fragment_shader_2);
