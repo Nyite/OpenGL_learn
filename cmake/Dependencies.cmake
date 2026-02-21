@@ -1,4 +1,6 @@
 function(load_dependencies)
+    set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/_deps)
+
     include(cmake/CPM.cmake)
     include(cmake/SystemLink.cmake)
 
@@ -25,6 +27,12 @@ function(load_dependencies)
         NAME glad
         GITHUB_REPOSITORY Dav1dde/glad
         GIT_TAG master
+    )
+
+    # Load stb_image
+    file(DOWNLOAD
+        "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h"
+        "${FETCHCONTENT_BASE_DIR}/include/stb/stb_image.h"
     )
 
     # Load GTest

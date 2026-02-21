@@ -12,13 +12,13 @@ class TBufferObject {
     TBufferObject(const std::span<T, Extent>& values) {
         glGenBuffers(1, &id_);
 
+        Bind();
         if constexpr (BufferVariant == EBufferVariant::Vertex) {
-            glBindBuffer(GL_ARRAY_BUFFER, id_);
             glBufferData(GL_ARRAY_BUFFER, values.size() * sizeof(T), values.data(), GL_STATIC_DRAW);
         } else {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id_);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, values.size() * sizeof(T), values.data(), GL_STATIC_DRAW);
         }
+        BindTo(0);
     }
 
     ~TBufferObject() {
@@ -27,6 +27,19 @@ class TBufferObject {
 
     constexpr GLuint GetId() const noexcept {
         return id_;
+    }
+
+    void Bind() {
+        BindTo(id_);
+    }
+
+  private:
+    void BindTo(GLuint id) const {
+        if constexpr (BufferVariant == EBufferVariant::Vertex) {
+            glBindBuffer(GL_ARRAY_BUFFER, id);
+        } else {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+        }
     }
 
   private:

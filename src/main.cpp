@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <ostream>
+#include <stb/stb_image.h>
 
 #include "shaders/shader.hpp"
 #include "shaders/program.hpp"
@@ -64,58 +65,51 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     // clang-format off
-    float verticies_1[] = {
-        -0.9f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,// left 
-        -0.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,// right
-        -0.45f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top 
+    float verticies[] = {
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+         0.5f,  0.5f, 0.0f,
+        -0.5f,  0.5f, 0.0f
     };
 
-    float verticies_2[] = {
-         0.3f, -0.5f, 0.0f,  // left
-         0.9f, -0.5f, 0.0f,  // right
-         0.45f, 0.5f, 0.0f   // top 
+    GLuint elements[] = {
+        0, 1, 2,
+        2, 3, 0
     };
     // clang-format on
 
-    TVertextArray VAO_1;
-    TBufferObject<EBufferVariant::Vertex> VBO_1(std::span{verticies_1});
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    TVertextArray VAO;
+    VAO.Bind();
 
-    TVertextArray VAO_2;
-    TBufferObject<EBufferVariant::Vertex> VBO_2(std::span{verticies_2});
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+    TBufferObject<EBufferVariant::Vertex> VBO(std::span{verticies});
+    VBO.Bind();
+    TBufferObject<EBufferVariant::Element> EBO(std::span{elements});
+    EBO.Bind();
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_1("assets/shaders/fragment_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_2("assets/shaders/fragment_shader_new.glsl");
+    TShader<EShaderVariant::Fragment> fragment_shader("assets/shaders/fragment_shader.glsl");
+    TShaderProgram shader_program(vertex_shader, fragment_shader);
 
-    TShaderProgram shader_program_1(vertex_shader, fragment_shader_1);
-    TShaderProgram shader_program_2(vertex_shader, fragment_shader_2);
+    // int wigth, height, channels;
+    // stbi_set_flip_vertically_on_load(true);
+    // unsigned char* image = stbi_load("assets/textures/container.jpg", &wigth, &height, &channels, 0);
+    // if (!image) {
+    //     throw std::runtime_error{"Failed to load texture"};
+    // }
 
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
 
-        glClearColor(0.1f, 0.7f, 0.4f, 1.0f);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        float pulse = static_cast<float>(std::abs(std::sin(glfwGetTime())));
-        float offset = static_cast<float>(std::abs(std::sin(glfwGetTime())));
 
-        glUseProgram(shader_program_1.GetId());
-        GLint offset_location = glGetUniformLocation(shader_program_1.GetId(), "offset");
-        glUniform3f(offset_location, offset, 0.0f, 0.0f);
-        glBindVertexArray(VAO_1.GetId());
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        glUseProgram(shader_program_2.GetId());
-        GLint color_location = glGetUniformLocation(shader_program_2.GetId(), "uniColor");
-        glUniform4f(color_location, 0.0f, 0.0f, pulse, 1.0f);
-
-        glBindVertexArray(VAO_2.GetId());
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glUseProgram(shader_program.GetId());
+        VAO.Bind();
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

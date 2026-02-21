@@ -1,9 +1,10 @@
 #version 330
-in vec4 fColor;
+
+uniform sampler2D 2dText;
 
 out vec4 FragColor;
 
 void main()
 {
-    FragColor = fColor;
+    FragColor = textture(2dText);
 }

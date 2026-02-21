@@ -5,7 +5,6 @@ class TVertextArray {
   public:
     TVertextArray() {
         glGenVertexArrays(1, &id_);
-        glBindVertexArray(id_);
     }
 
     ~TVertextArray() {
@@ -14,6 +13,10 @@ class TVertextArray {
 
     constexpr GLuint GetId() const noexcept {
         return id_;
+    }
+
+    void Bind() const {
+        glBindVertexArray(id_);
     }
 
   private:
