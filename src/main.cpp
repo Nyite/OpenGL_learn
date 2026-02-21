@@ -1,9 +1,12 @@
+#include <iostream>
 #include <fmt/format.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
+
 #include "shaders/shader.hpp"
 #include "shaders/program.hpp"
+#include "buffers/buffer_object.hpp"
+#include "buffers/vertex_array.hpp"
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
@@ -48,39 +51,35 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     // clang-format off
-    float verticies[] = {
-        -0.5f, -0.5f, 0.0f, // bottom left
-         0.5f, -0.5f, 0.0f, // bottom right
-        -0.5f,  0.5f, 0.0f, // top left
-         0.5f,  0.5f, 0.0f  // top right
+    float verticies_1[] = {
+        -0.9f, -0.5f, 0.0f,  // left 
+        -0.0f, -0.5f, 0.0f,  // right
+        -0.45f, 0.5f, 0.0f,  // top 
     };
 
-    GLuint elements[] = {
-        0, 1, 3,
-        0, 2, 3
+    float verticies_2[] = {
+         0.3f, -0.5f, 0.0f,  // left
+         0.9f, -0.5f, 0.0f,  // right
+         0.45f, 0.5f, 0.0f   // top 
     };
     // clang-format on
 
-    GLuint VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
+    TVertextArray VAO_1;
+    TBufferObject<EBufferVariant::Vertex> VBO_1(std::span{verticies_1});
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
+    glEnableVertexAttribArray(0);
 
-    GLuint VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
-
-    GLuint EBO;
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-
+    TVertextArray VAO_2;
+    TBufferObject<EBufferVariant::Vertex> VBO_2(std::span{verticies_2});
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
     glEnableVertexAttribArray(0);
 
     TShader<EShaderVariant::Vertex> vertex_shader("../assets/shaders/vertex_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader("../assets/shaders/fragment_shader.glsl");
-    TShaderProgram shader_program(vertex_shader, fragment_shader);
+    TShader<EShaderVariant::Fragment> fragment_shader_1("../assets/shaders/fragment_shader.glsl");
+    TShader<EShaderVariant::Fragment> fragment_shader_2("../assets/shaders/fragment_shader_new.glsl");
+
+    TShaderProgram shader_program_1(vertex_shader, fragment_shader_1);
+    TShaderProgram shader_program_2(vertex_shader, fragment_shader_2);
 
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
@@ -88,17 +87,17 @@ int main() {
         glClearColor(0.1f, 0.7f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shader_program.GetId());
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
-        glBindVertexArray(0);
+        glUseProgram(shader_program_1.GetId());
+        glBindVertexArray(VAO_1.GetId());
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glUseProgram(shader_program_2.GetId());
+        glBindVertexArray(VAO_2.GetId());
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
 
     glfwTerminate();
     return 0;

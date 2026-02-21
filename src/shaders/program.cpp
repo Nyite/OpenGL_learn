@@ -3,9 +3,6 @@
 
 TShaderProgram::TShaderProgram(TShader<EShaderVariant::Vertex> vertex_shader,
                                TShader<EShaderVariant::Fragment> fragment_shader) {
-    vertex_shader.Compile();
-    fragment_shader.Compile();
-
     id_ = glCreateProgram();
     glAttachShader(id_, vertex_shader.GetId());
     glAttachShader(id_, fragment_shader.GetId());

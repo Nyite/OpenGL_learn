@@ -9,14 +9,17 @@ template <EShaderVariant ShaderVariant>
 class TShader {
   public:
     TShader(const char* file_path);
-    void Compile();
-    constexpr GLuint GetId() const noexcept {
-        return id_;
-    }
 
     ~TShader() noexcept {
         glDeleteShader(id_);
     }
+
+    constexpr GLuint GetId() const noexcept {
+        return id_;
+    }
+
+  private:
+    void Compile();
 
   private:
     GLuint id_;
@@ -41,6 +44,7 @@ TShader<ShaderVariant>::TShader(const char* file_path) {
 
     const char* text_ptr = text.data();
     glShaderSource(id_, 1, &text_ptr, NULL);
+    Compile();
 }
 
 template <EShaderVariant ShaderVariant>
