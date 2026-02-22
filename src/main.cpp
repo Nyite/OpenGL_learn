@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <fmt/core.h>
 #include <iostream>
@@ -12,6 +13,10 @@
 #include "buffers/vertex_array.hpp"
 #include "textures/texture.hpp"
 
+namespace {
+float mixCoef = 0.5f;
+}
+
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -24,6 +29,11 @@ void processEvents(GLFWwindow* window) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        mixCoef = std::clamp(mixCoef - 0.01f, 0.0f, 1.0f);
+    } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        mixCoef = std::clamp(mixCoef + 0.01f, 0.0f, 1.0f);
     }
 }
 
@@ -68,9 +78,9 @@ int main() {
     float verticies[] = {
         // Vertext coords // Textrue coords
         -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
-        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f
+         0.5f, -0.5f, 0.0f, 2.0f, 0.0f,
+         0.5f,  0.5f, 0.0f, 2.0f, 2.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 2.0f
     };
 
     GLuint elements[] = {
@@ -99,8 +109,13 @@ int main() {
 
     shader_program.Use();
     TTexture texture_1("assets/textures/container.jpg", GL_RGB, GL_TEXTURE0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     shader_program.SetUnifiorm("tex1", 0);
+
     TTexture texture_2("assets/textures/awesomeface.png", GL_RGBA, GL_TEXTURE1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     shader_program.SetUnifiorm("tex2", 1);
 
     while (!glfwWindowShouldClose(window)) {
@@ -108,6 +123,8 @@ int main() {
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        shader_program.SetUnifiorm("mixCoef", mixCoef);
 
         shader_program.Use();
         texture_1.Bind();
