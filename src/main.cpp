@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <fmt/core.h>
 #include <iostream>
@@ -10,6 +11,11 @@
 #include "shaders/program.hpp"
 #include "buffers/buffer_object.hpp"
 #include "buffers/vertex_array.hpp"
+#include "textures/texture.hpp"
+
+namespace {
+float mixCoef = 0.5f;
+}
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
@@ -23,6 +29,11 @@ void processEvents(GLFWwindow* window) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        mixCoef = std::clamp(mixCoef - 0.01f, 0.0f, 1.0f);
+    } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        mixCoef = std::clamp(mixCoef + 0.01f, 0.0f, 1.0f);
     }
 }
 
@@ -64,58 +75,64 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     // clang-format off
-    float verticies_1[] = {
-        -0.9f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,// left 
-        -0.0f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,// right
-        -0.45f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top 
+    float verticies[] = {
+        // Vertext coords // Textrue coords
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f, 2.0f, 0.0f,
+         0.5f,  0.5f, 0.0f, 2.0f, 2.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 2.0f
     };
 
-    float verticies_2[] = {
-         0.3f, -0.5f, 0.0f,  // left
-         0.9f, -0.5f, 0.0f,  // right
-         0.45f, 0.5f, 0.0f   // top 
+    GLuint elements[] = {
+        0, 1, 2,
+        2, 3, 0
     };
     // clang-format on
 
-    TVertextArray VAO_1;
-    TBufferObject<EBufferVariant::Vertex> VBO_1(std::span{verticies_1});
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), NULL);
+    TVertextArray VAO;
+    VAO.Bind();
+
+    TBufferObject<EBufferVariant::Vertex> VBO(std::span{verticies});
+    VBO.Bind();
+    TBufferObject<EBufferVariant::Element> EBO(std::span{elements});
+    EBO.Bind();
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    TVertextArray VAO_2;
-    TBufferObject<EBufferVariant::Vertex> VBO_2(std::span{verticies_2});
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), NULL);
-    glEnableVertexAttribArray(0);
-
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_1("assets/shaders/fragment_shader.glsl");
-    TShader<EShaderVariant::Fragment> fragment_shader_2("assets/shaders/fragment_shader_new.glsl");
+    TShader<EShaderVariant::Fragment> fragment_shader("assets/shaders/fragment_shader.glsl");
+    TShaderProgram shader_program(vertex_shader, fragment_shader);
 
-    TShaderProgram shader_program_1(vertex_shader, fragment_shader_1);
-    TShaderProgram shader_program_2(vertex_shader, fragment_shader_2);
+    shader_program.Use();
+    TTexture texture_1("assets/textures/container.jpg", GL_RGB, GL_TEXTURE0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    shader_program.SetUnifiorm("tex1", 0);
+
+    TTexture texture_2("assets/textures/awesomeface.png", GL_RGBA, GL_TEXTURE1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    shader_program.SetUnifiorm("tex2", 1);
 
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
 
-        glClearColor(0.1f, 0.7f, 0.4f, 1.0f);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        float pulse = static_cast<float>(std::abs(std::sin(glfwGetTime())));
-        float offset = static_cast<float>(std::abs(std::sin(glfwGetTime())));
 
-        glUseProgram(shader_program_1.GetId());
-        GLint offset_location = glGetUniformLocation(shader_program_1.GetId(), "offset");
-        glUniform3f(offset_location, offset, 0.0f, 0.0f);
-        glBindVertexArray(VAO_1.GetId());
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        shader_program.SetUnifiorm("mixCoef", mixCoef);
 
-        glUseProgram(shader_program_2.GetId());
-        GLint color_location = glGetUniformLocation(shader_program_2.GetId(), "uniColor");
-        glUniform4f(color_location, 0.0f, 0.0f, pulse, 1.0f);
+        shader_program.Use();
+        texture_1.Bind();
+        texture_2.Bind();
+        VAO.Bind();
 
-        glBindVertexArray(VAO_2.GetId());
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

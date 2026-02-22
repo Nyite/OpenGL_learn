@@ -17,6 +17,7 @@ add_executable(OPENGL_LEARN ${SRC_FILES})
 target_link_system_library(OPENGL_LEARN PRIVATE fmt)
 target_link_system_library(OPENGL_LEARN PRIVATE glfw)
 target_link_system_library(OPENGL_LEARN PRIVATE glad)
+target_link_system_library(OPENGL_LEARN PRIVATE stb_image)
 
 include(cmake/ProjectOptions.cmake)
 apply_project_options(OPENGL_LEARN)

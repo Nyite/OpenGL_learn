@@ -14,6 +14,18 @@ class TShaderProgram {
         return id_;
     }
 
+    void SetUnifiorm(const char* name, GLint value) {
+        glUniform1i(glGetUniformLocation(id_, name), value);
+    }
+
+    void SetUnifiorm(const char* name, GLfloat value) {
+        glUniform1f(glGetUniformLocation(id_, name), value);
+    }
+
+    void Use() const {
+        glUseProgram(id_);
+    }
+
   private:
     GLuint id_;
 };
