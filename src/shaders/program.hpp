@@ -18,6 +18,10 @@ class TShaderProgram {
         glUniform1i(glGetUniformLocation(id_, name), value);
     }
 
+    void Use() const {
+        glUseProgram(id_);
+    }
+
   private:
     GLuint id_;
 };

@@ -5,12 +5,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <ostream>
-#include <stb/stb_image.h>
 
 #include "shaders/shader.hpp"
 #include "shaders/program.hpp"
 #include "buffers/buffer_object.hpp"
 #include "buffers/vertex_array.hpp"
+#include "textures/texture.hpp"
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
@@ -66,10 +66,11 @@ int main() {
 
     // clang-format off
     float verticies[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
+        // Vertext coords // Textrue coords
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+         0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f
     };
 
     GLuint elements[] = {
@@ -86,19 +87,21 @@ int main() {
     TBufferObject<EBufferVariant::Element> EBO(std::span{elements});
     EBO.Bind();
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
     TShader<EShaderVariant::Fragment> fragment_shader("assets/shaders/fragment_shader.glsl");
     TShaderProgram shader_program(vertex_shader, fragment_shader);
 
-    // int wigth, height, channels;
-    // stbi_set_flip_vertically_on_load(true);
-    // unsigned char* image = stbi_load("assets/textures/container.jpg", &wigth, &height, &channels, 0);
-    // if (!image) {
-    //     throw std::runtime_error{"Failed to load texture"};
-    // }
+    shader_program.Use();
+    TTexture texture_1("assets/textures/container.jpg", GL_RGB, GL_TEXTURE0);
+    shader_program.SetUnifiorm("tex1", 0);
+    TTexture texture_2("assets/textures/awesomeface.png", GL_RGBA, GL_TEXTURE1);
+    shader_program.SetUnifiorm("tex2", 1);
 
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
@@ -106,8 +109,11 @@ int main() {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shader_program.GetId());
+        shader_program.Use();
+        texture_1.Bind();
+        texture_2.Bind();
         VAO.Bind();
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
 

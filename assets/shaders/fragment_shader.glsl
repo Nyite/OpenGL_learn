@@ -1,10 +1,11 @@
 #version 330
-
-uniform sampler2D 2dText;
+in vec2 texPosInterp;
+uniform sampler2D tex1;
+uniform sampler2D tex2;
 
 out vec4 FragColor;
 
 void main()
 {
-    FragColor = textture(2dText);
+    FragColor = mix(texture(tex1, texPosInterp), texture(tex2, texPosInterp), 0.2);
 }
