@@ -98,13 +98,13 @@ int main() {
     TVertextArray VAO;
     VAO.Bind();
 
-    TBufferObject<EBufferVariant::Vertex> VBO(std::span{cubeVerticies});
+    TBufferObject<EBufferVariant::Vertex> VBO(std::span{cubeVerticiesWithNormals});
     VBO.Bind();
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
@@ -125,10 +125,12 @@ int main() {
 
     glm::vec3 light_color(1.0f, 1.0f, 1.0f);
     glm::vec3 coral(1.0f, 0.5f, 0.31f);
-    
+    glm::vec3 light_pos({2.0f, 2.0f, 0.0f});
+
     shader_program.Use();
     shader_program.SetUnifiorm("lightColor", glm::value_ptr(light_color));
     shader_program.SetUnifiorm("objectColor", glm::value_ptr(coral));
+    shader_program.SetUnifiorm("lightPos", glm::value_ptr(light_pos));
 
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
@@ -154,10 +156,9 @@ int main() {
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        glm::vec3 light_pos({0.0f, 4.0f, 0.0f});
         glm::mat4 model(1.0f);
-        model = glm::scale(model, {0.2f, 0.2f, 0.2f});
         model = glm::translate(model, light_pos);
+        model = glm::scale(model, {0.2f, 0.2f, 0.2f});
 
         light_shp.Use();
         light_shp.SetUnifiormMatrix("projection", glm::value_ptr(projection));
