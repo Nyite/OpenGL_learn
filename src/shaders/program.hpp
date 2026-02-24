@@ -23,6 +23,10 @@ class TShaderProgram {
     }
 
     void SetUnifiorm(const char* name, const GLfloat *value) {
+        glUniform3fv(glGetUniformLocation(id_, name), 1, value);
+    }
+
+    void SetUnifiormMatrix(const char* name, const GLfloat *value) {
         glUniformMatrix4fv(glGetUniformLocation(id_, name), 1, GL_FALSE, value);
     }
 
