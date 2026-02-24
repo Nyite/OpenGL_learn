@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "camera.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/geometric.hpp"
@@ -17,22 +18,19 @@
 #include "buffers/buffer_object.hpp"
 #include "buffers/vertex_array.hpp"
 #include "textures/texture.hpp"
+#include "camera.hpp"
 #include "shapes.hpp"
 
 namespace {
-    constexpr size_t InitWindowWigth = 800z;
-    constexpr size_t InitWindowHeight = 600z;
-    float AspectRatio = static_cast<float>(InitWindowWigth) / InitWindowHeight;
+constexpr size_t InitWindowWigth = 800z;
+constexpr size_t InitWindowHeight = 600z;
+float AspectRatio = static_cast<float>(InitWindowWigth) / InitWindowHeight;
 
-    glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
-    glm::vec3 camera_direction(0.0f, 0.0f, -1.0f);
+TCamera camera({0.0f, 0.0f, 3.0f});
 
-    float yaw = -90.0f;
-    float pitch = 0.0f;
-
-    constexpr float mouse_sence = 0.1f;
-    constexpr float camera_speed = 0.01f;
-}
+constexpr float mouse_sence = 0.1f;
+constexpr float camera_speed = 0.01f;
+} // namespace
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
@@ -40,27 +38,7 @@ void framebufferSizeCallback(GLFWwindow*, int width, int height) {
 }
 
 static void cursor_position_callback([[maybe_unused]] GLFWwindow* window, double xpos, double ypos) {
-    static double last_xpos = static_cast<double>(InitWindowWigth) / 2.0;
-    static double last_ypos = static_cast<double>(InitWindowHeight) / 2.0;
-
-    double xdiff = xpos - last_xpos;
-    double ydiff = last_ypos - ypos;
-    last_xpos = xpos;
-    last_ypos = ypos;
-
-    yaw += static_cast<float>(xdiff) * mouse_sence;
-    pitch += static_cast<float>(ydiff) * mouse_sence;
-
-    if(pitch > 89.0f)
-        pitch = 89.0f;
-    if(pitch < -89.0f)
-        pitch = -89.0f;
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    camera_direction = glm::normalize(direction);
+    camera.OnMouseMovement(xpos, ypos, mouse_sence);
 }
 
 void processEvents(GLFWwindow* window) {
@@ -73,24 +51,8 @@ void processEvents(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-    float effective_camera_speed = camera_speed;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        effective_camera_speed *= 2;
-    }
 
-    glm::vec3 camera_right = glm::normalize(glm::cross(camera_direction, {0.0f, 1.0f, 0.0f}));
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera_pos += effective_camera_speed * camera_direction;
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera_pos -= effective_camera_speed * camera_direction;
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera_pos -= effective_camera_speed * camera_right;
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera_pos += effective_camera_speed * camera_right;
-    }
+    camera.OnPollEvent(window, camera_speed);
 }
 
 int main() {
@@ -159,18 +121,11 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     shader_program.SetUnifiorm("tex2", 1);
 
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f), 
-        glm::vec3(-1.5f, -2.2f, -2.5f),  
-        glm::vec3(-3.8f, -2.0f, -12.3f),  
-        glm::vec3( 2.4f, -0.4f, -3.5f),  
-        glm::vec3(-1.7f,  3.0f, -7.5f),  
-        glm::vec3( 1.3f, -2.0f, -2.5f),  
-        glm::vec3( 1.5f,  2.0f, -2.5f), 
-        glm::vec3( 1.5f,  0.2f, -1.5f), 
-        glm::vec3(-1.3f,  1.0f, -1.5f)  
-    };
+    glm::vec3 cubePositions[] = {glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
+                                 glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
+                                 glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
+                                 glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
+                                 glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
     glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window)) {
@@ -182,11 +137,9 @@ int main() {
         glm::mat4 projection = glm::perspective(glm::radians(75.0f), AspectRatio, 0.1f, 100.0f);
 
         glm::mat4 view(1.0f);
-        view = glm::lookAt(camera_pos, camera_pos + camera_direction, {0.0f, 1.0f, 0.0f});
+        view = camera.GetViewMatrix();
 
         shader_program.Use();
-        texture_1.Bind();
-        texture_2.Bind();
         VAO.Bind();
 
         shader_program.SetUnifiorm("projection", glm::value_ptr(projection));
