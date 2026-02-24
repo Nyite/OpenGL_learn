@@ -1,24 +1,32 @@
-#include <algorithm>
-#include <cmath>
-#include <fmt/core.h>
+#include <ostream>
 #include <iostream>
+
+#include <fmt/core.h>
 #include <fmt/format.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <ostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/trigonometric.hpp"
 #include "shaders/shader.hpp"
 #include "shaders/program.hpp"
 #include "buffers/buffer_object.hpp"
 #include "buffers/vertex_array.hpp"
 #include "textures/texture.hpp"
+#include "shapes.hpp"
 
 namespace {
-float mixCoef = 0.5f;
+    constexpr size_t InitWindowWigth = 800z;
+    constexpr size_t InitWindowHeight = 600z;
+    float AspectRatio = static_cast<float>(InitWindowWigth) / InitWindowHeight;
 }
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
+    AspectRatio = static_cast<float>(width) / height;
 }
 
 void processEvents(GLFWwindow* window) {
@@ -29,11 +37,6 @@ void processEvents(GLFWwindow* window) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        mixCoef = std::clamp(mixCoef - 0.01f, 0.0f, 1.0f);
-    } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        mixCoef = std::clamp(mixCoef + 0.01f, 0.0f, 1.0f);
     }
 }
 
@@ -74,28 +77,11 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-    // clang-format off
-    float verticies[] = {
-        // Vertext coords // Textrue coords
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, 0.0f, 2.0f, 0.0f,
-         0.5f,  0.5f, 0.0f, 2.0f, 2.0f,
-        -0.5f,  0.5f, 0.0f, 0.0f, 2.0f
-    };
-
-    GLuint elements[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-    // clang-format on
-
     TVertextArray VAO;
     VAO.Bind();
 
-    TBufferObject<EBufferVariant::Vertex> VBO(std::span{verticies});
+    TBufferObject<EBufferVariant::Vertex> VBO(std::span{cubeVerticies});
     VBO.Bind();
-    TBufferObject<EBufferVariant::Element> EBO(std::span{elements});
-    EBO.Bind();
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
@@ -118,21 +104,32 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     shader_program.SetUnifiorm("tex2", 1);
 
+    glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
 
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader_program.SetUnifiorm("mixCoef", mixCoef);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), AspectRatio, 0.1f, 100.0f);
+
+        glm::mat4 view(1.0f);
+        view = glm::translate(view, {0.0f, 0.0f, -3.0f});
+
+        glm::mat4 model(1.0f);
+        model = glm::rotate(model, static_cast<float>(glfwGetTime()), {0.5f, 1.0f, 0.0f});
 
         shader_program.Use();
+        shader_program.SetUnifiorm("projection", glm::value_ptr(projection));
+        shader_program.SetUnifiorm("view", glm::value_ptr(view));
+        shader_program.SetUnifiorm("model", glm::value_ptr(model));
+
         texture_1.Bind();
         texture_2.Bind();
+
         VAO.Bind();
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-        glBindVertexArray(0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
