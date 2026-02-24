@@ -10,6 +10,7 @@
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/geometric.hpp"
 #include "glm/trigonometric.hpp"
 #include "shaders/shader.hpp"
 #include "shaders/program.hpp"
@@ -22,11 +23,44 @@ namespace {
     constexpr size_t InitWindowWigth = 800z;
     constexpr size_t InitWindowHeight = 600z;
     float AspectRatio = static_cast<float>(InitWindowWigth) / InitWindowHeight;
+
+    glm::vec3 camera_pos(0.0f, 0.0f, 3.0f);
+    glm::vec3 camera_direction(0.0f, 0.0f, -1.0f);
+
+    float yaw = -90.0f;
+    float pitch = 0.0f;
+
+    constexpr float mouse_sence = 0.1f;
+    constexpr float camera_speed = 0.01f;
 }
 
 void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
     AspectRatio = static_cast<float>(width) / height;
+}
+
+static void cursor_position_callback([[maybe_unused]] GLFWwindow* window, double xpos, double ypos) {
+    static double last_xpos = static_cast<double>(InitWindowWigth) / 2.0;
+    static double last_ypos = static_cast<double>(InitWindowHeight) / 2.0;
+
+    double xdiff = xpos - last_xpos;
+    double ydiff = last_ypos - ypos;
+    last_xpos = xpos;
+    last_ypos = ypos;
+
+    yaw += static_cast<float>(xdiff) * mouse_sence;
+    pitch += static_cast<float>(ydiff) * mouse_sence;
+
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    camera_direction = glm::normalize(direction);
 }
 
 void processEvents(GLFWwindow* window) {
@@ -35,8 +69,27 @@ void processEvents(GLFWwindow* window) {
     }
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    } else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+    }
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    float effective_camera_speed = camera_speed;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        effective_camera_speed *= 2;
+    }
+
+    glm::vec3 camera_right = glm::normalize(glm::cross(camera_direction, {0.0f, 1.0f, 0.0f}));
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera_pos += effective_camera_speed * camera_direction;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera_pos -= effective_camera_speed * camera_direction;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera_pos -= effective_camera_speed * camera_right;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera_pos += effective_camera_speed * camera_right;
     }
 }
 
@@ -76,6 +129,8 @@ int main() {
     std::cout << std::flush;
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     TVertextArray VAO;
     VAO.Bind();
@@ -104,6 +159,19 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     shader_program.SetUnifiorm("tex2", 1);
 
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
+
     glEnable(GL_DEPTH_TEST);
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
@@ -111,25 +179,25 @@ int main() {
         glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), AspectRatio, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(75.0f), AspectRatio, 0.1f, 100.0f);
 
         glm::mat4 view(1.0f);
-        view = glm::translate(view, {0.0f, 0.0f, -3.0f});
-
-        glm::mat4 model(1.0f);
-        model = glm::rotate(model, static_cast<float>(glfwGetTime()), {0.5f, 1.0f, 0.0f});
+        view = glm::lookAt(camera_pos, camera_pos + camera_direction, {0.0f, 1.0f, 0.0f});
 
         shader_program.Use();
-        shader_program.SetUnifiorm("projection", glm::value_ptr(projection));
-        shader_program.SetUnifiorm("view", glm::value_ptr(view));
-        shader_program.SetUnifiorm("model", glm::value_ptr(model));
-
         texture_1.Bind();
         texture_2.Bind();
-
         VAO.Bind();
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        shader_program.SetUnifiorm("projection", glm::value_ptr(projection));
+        shader_program.SetUnifiorm("view", glm::value_ptr(view));
+
+        for (auto& pos : cubePositions) {
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, pos);
+            shader_program.SetUnifiorm("model", glm::value_ptr(model));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
