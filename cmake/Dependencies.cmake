@@ -29,6 +29,13 @@ function(load_dependencies)
         GIT_TAG master
     )
 
+    # Load GLM
+    CPMAddPackage(
+        NAME glm
+        GITHUB_REPOSITORY g-truc/glm
+        GIT_TAG 1.0.3
+    )
+
     # Load stb_image
     file(DOWNLOAD
         "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h"
