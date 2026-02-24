@@ -125,7 +125,7 @@ int main() {
 
     glm::vec3 light_color(1.0f, 1.0f, 1.0f);
     glm::vec3 coral(1.0f, 0.5f, 0.31f);
-    glm::vec3 light_pos({2.0f, 2.0f, 0.0f});
+    glm::vec3 light_pos({1.0f, 2.0f, 0.0f});
 
     shader_program.Use();
     shader_program.SetUnifiorm("lightColor", glm::value_ptr(light_color));
@@ -149,11 +149,15 @@ int main() {
         shader_program.SetUnifiormMatrix("projection", glm::value_ptr(projection));
         shader_program.SetUnifiormMatrix("view", glm::value_ptr(view));
 
+        float angle = 0.0f;
         for (auto& pos : cubePositions) {
             glm::mat4 model(1.0f);
             model = glm::translate(model, pos);
+            model = glm::rotate(model, glm::radians(angle), {0.5f, 0.0f, 1.0f});
             shader_program.SetUnifiormMatrix("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            angle += 20.0f;
         }
 
         glm::mat4 model(1.0f);
