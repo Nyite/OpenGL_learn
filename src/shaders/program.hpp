@@ -2,6 +2,8 @@
 #include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "shader.hpp"
+#include "../objects/material.hpp"
+#include "../objects/light.hpp"
 #include <glad/glad.h>
 
 class TShaderProgram {
@@ -10,6 +12,27 @@ class TShaderProgram {
 
     ~TShaderProgram() noexcept {
         glDeleteProgram(id_);
+    }
+
+    void SetMaterial(const TMaterial& material) {
+        Use();
+        material.diffuse_map.Bind();
+        material.specular_map.Bind();
+        material.emmit_map.Bind();
+
+        SetUnifiorm("material.diffuse", material.diffuse_map.GetUniformIndex());
+        SetUnifiorm("material.specular", material.specular_map.GetUniformIndex());
+        SetUnifiorm("material.emit", material.emmit_map.GetUniformIndex());
+        SetUnifiorm("material.shine", material.shine);
+        SetUnifiorm("material.emitStrenght", material.emitStrenght);
+    }
+
+    void SetLight(TLight light) {
+        Use();
+        SetUnifiorm("light.ambient",  glm::value_ptr(light.ambient));
+        SetUnifiorm("light.diffuse",  glm::value_ptr(light.diffuse));
+        SetUnifiorm("light.specular", glm::value_ptr(light.specular));
+        SetUnifiorm("lightPos", glm::value_ptr(light.position));
     }
 
     constexpr GLuint GetId() const noexcept {

@@ -6,16 +6,17 @@
 
 class TTexture {
   public:
-    TTexture(const char* file_name, GLenum image_format, GLenum texture_unit) {
+    TTexture() = default;
+    TTexture(const char* file_name, GLenum image_format, GLenum texture_unit) : texture_unit_(texture_unit) {
         int wigth, height, channels;
         stbi_set_flip_vertically_on_load(true);
         unsigned char* image = stbi_load(file_name, &wigth, &height, &channels, 0);
         if (!image) {
-            throw std::runtime_error{fmt::format("Failed to load texture {} from file {}", texture_unit, file_name)};
+            throw std::runtime_error{fmt::format("Failed to load texture {} from file {}", texture_unit_, file_name)};
         }
 
         glGenTextures(1, &id_);
-        glActiveTexture(texture_unit);
+        glActiveTexture(texture_unit_);
         glBindTexture(GL_TEXTURE_2D, id_);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -25,14 +26,25 @@ class TTexture {
         glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(image);
+        loaded_ = true;
     }
 
     ~TTexture() noexcept {
-        glDeleteTextures(1, &id_);
+        if (loaded_) {
+            glDeleteTextures(1, &id_);
+        }
     }
 
     constexpr GLuint GetId() const noexcept {
         return id_;
+    }
+
+    constexpr bool IsLoaded() const noexcept {
+        return loaded_;
+    }
+
+    GLint GetUniformIndex() const noexcept {
+        return texture_unit_ - GL_TEXTURE0;
     }
 
     void Bind() const {
@@ -43,4 +55,5 @@ class TTexture {
   private:
     GLuint id_;
     GLenum texture_unit_;
+    bool loaded_ = false;
 };
