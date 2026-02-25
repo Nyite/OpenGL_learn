@@ -50,10 +50,10 @@ void processEvents(GLFWwindow* window) {
     camera.OnPollEvent(window, camera_speed);
 }
 
-int main() {
+GLFWwindow* SetupWindow() {
     if (glfwInit() == GLFW_FALSE) {
         std::cerr << "Failed to initialize GLFW";
-        return -1;
+        return nullptr;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -64,7 +64,7 @@ int main() {
     if (window == nullptr) {
         glfwTerminate();
         std::cerr << "Failed to create window";
-        return -1;
+        return nullptr;
     }
 
     glfwMakeContextCurrent(window);
@@ -72,16 +72,27 @@ int main() {
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         std::cerr << "Failed to initialize glad";
         glfwTerminate();
-        return -1;
+        return nullptr;
     }
 
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    return window;
+}
+
+int main() {
+    GLFWwindow* window = SetupWindow();
+    if (!window) {
+        return -1;
+    }
+
     TMaterial cube_material{.diffuse_map = TTexture("assets/textures/container2.png", GL_RGBA, GL_TEXTURE0),
                             .specular_map = TTexture("assets/textures/container2_specular.png", GL_RGBA, GL_TEXTURE1),
-                            .shine = 64.0f};
+                            .emmit_map = TTexture("assets/textures/matrix.jpg", GL_RGB, GL_TEXTURE2),
+                            .shine = 64.0f,
+                            .emitStrenght = 0.0f};
 
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
     TShader<EShaderVariant::Fragment> fragment_shader("assets/shaders/fragment_shader.glsl");

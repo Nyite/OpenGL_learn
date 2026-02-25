@@ -18,10 +18,13 @@ class TShaderProgram {
         Use();
         material.diffuse_map.Bind();
         material.specular_map.Bind();
+        material.emmit_map.Bind();
 
         SetUnifiorm("material.diffuse", material.diffuse_map.GetUniformIndex());
         SetUnifiorm("material.specular", material.specular_map.GetUniformIndex());
-        SetUnifiorm("material.shininess", material.shine);
+        SetUnifiorm("material.emit", material.emmit_map.GetUniformIndex());
+        SetUnifiorm("material.shine", material.shine);
+        SetUnifiorm("material.emitStrenght", material.emitStrenght);
     }
 
     void SetLight(TLight light) {

@@ -6,6 +6,7 @@
 
 class TTexture {
   public:
+    TTexture() = default;
     TTexture(const char* file_name, GLenum image_format, GLenum texture_unit) : texture_unit_(texture_unit) {
         int wigth, height, channels;
         stbi_set_flip_vertically_on_load(true);
@@ -25,14 +26,21 @@ class TTexture {
         glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(image);
+        loaded_ = true;
     }
 
     ~TTexture() noexcept {
-        glDeleteTextures(1, &id_);
+        if (loaded_) {
+            glDeleteTextures(1, &id_);
+        }
     }
 
     constexpr GLuint GetId() const noexcept {
         return id_;
+    }
+
+    constexpr bool IsLoaded() const noexcept {
+        return loaded_;
     }
 
     GLint GetUniformIndex() const noexcept {
@@ -47,4 +55,5 @@ class TTexture {
   private:
     GLuint id_;
     GLenum texture_unit_;
+    bool loaded_ = false;
 };

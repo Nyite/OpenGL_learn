@@ -9,7 +9,9 @@ out vec4 FragColor;
 struct Material {
     sampler2D diffuse;
     sampler2D specular;
-    uint shine;
+    sampler2D emit;
+    float shine;
+    float emitStrenght;
 };
 
 struct Light {
@@ -35,6 +37,8 @@ void main()
     float spec = pow(max(dot(reflection, eyeVec), 0.0), 32);
     vec3 specular = spec * light.specular * texture(material.specular, textureInterp).rgb;
 
+    vec3 emit = material.emitStrenght * texture(material.emit, textureInterp).rgb;
+
     // Phong lighting
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    FragColor = vec4(ambient + diffuse + specular + emit, 1.0);
 }
