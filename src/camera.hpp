@@ -7,7 +7,7 @@
 
 class TCamera {
   public:
-    TCamera(glm::vec3 init_pos) : pos(init_pos) {
+    TCamera(glm::vec3 init_pos) : pos(init_pos), direction(0.0f, 0.0f, -1.0f) {
     }
 
     void OnMouseMovement(double xpos, double ypos, float mouse_sence) {
@@ -57,6 +57,10 @@ class TCamera {
 
     glm::mat4 GetViewMatrix() {
         return glm::lookAt(pos, pos + direction, {0.0f, 1.0f, 0.0f});
+    }
+
+    glm::vec3 GetPosition() const noexcept {
+        return pos;
     }
 
   private:

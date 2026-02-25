@@ -11,6 +11,7 @@
 #include "camera.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "glm/trigonometric.hpp"
 #include "shaders/shader.hpp"
@@ -97,29 +98,22 @@ int main() {
     TVertextArray VAO;
     VAO.Bind();
 
-    TBufferObject<EBufferVariant::Vertex> VBO(std::span{cubeVerticies});
+    TBufferObject<EBufferVariant::Vertex> VBO(std::span{cubeVerticiesWithNormals});
     VBO.Bind();
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     TShader<EShaderVariant::Vertex> vertex_shader("assets/shaders/vertex_shader.glsl");
     TShader<EShaderVariant::Fragment> fragment_shader("assets/shaders/fragment_shader.glsl");
     TShaderProgram shader_program(vertex_shader, fragment_shader);
 
-    shader_program.Use();
-    TTexture texture_1("assets/textures/container.jpg", GL_RGB, GL_TEXTURE0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    shader_program.SetUnifiorm("tex1", 0);
-
-    TTexture texture_2("assets/textures/awesomeface.png", GL_RGBA, GL_TEXTURE1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    shader_program.SetUnifiorm("tex2", 1);
+    TShader<EShaderVariant::Vertex> light_vsh("assets/shaders/light_source_vertex.glsl");
+    TShader<EShaderVariant::Fragment> light_fsh("assets/shaders/light_source_fragment.glsl");
+    TShaderProgram light_shp(light_vsh, light_fsh);
 
     glm::vec3 cubePositions[] = {glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
                                  glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
@@ -128,6 +122,18 @@ int main() {
                                  glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f)};
 
     glEnable(GL_DEPTH_TEST);
+
+    glm::vec3 coral(1.0f, 0.5f, 0.31f);
+    glm::vec3 light_pos({0.0f, 2.0f, -1.0f});
+
+    shader_program.Use();
+    shader_program.SetUnifiorm("objectColor", glm::value_ptr(coral));
+
+    shader_program.SetUnifiorm("material.ambient", 1.0f, 0.5f, 0.31f);
+    shader_program.SetUnifiorm("material.diffuse", 1.0f, 0.5f, 0.31f);
+    shader_program.SetUnifiorm("material.specular", 0.5f, 0.5f, 0.5f);
+    shader_program.SetUnifiorm("material.shininess", 32);
+
     while (!glfwWindowShouldClose(window)) {
         processEvents(window);
 
@@ -140,17 +146,44 @@ int main() {
         view = camera.GetViewMatrix();
 
         shader_program.Use();
+        shader_program.SetUnifiorm("eyePos", glm::value_ptr(camera.GetPosition()));
         VAO.Bind();
 
-        shader_program.SetUnifiorm("projection", glm::value_ptr(projection));
-        shader_program.SetUnifiorm("view", glm::value_ptr(view));
+        shader_program.SetUnifiormMatrix("projection", glm::value_ptr(projection));
+        shader_program.SetUnifiormMatrix("view", glm::value_ptr(view));
 
+        glm::mat4 model_light(1.0f);
+        float time = static_cast<float>(glfwGetTime());
+        model_light = glm::translate(model_light, glm::vec3{1.5f, 0.0f, 0.0f} * cos(time) + light_pos);
+        model_light = glm::scale(model_light, {0.2f, 0.2f, 0.2f});
+        shader_program.SetUnifiorm("lightPos", glm::value_ptr(model_light * glm::vec4(light_pos, 1.0f)));
+
+        glm::vec3 difuseColor(0.3f, 0.6f, 0.5f);
+        difuseColor.x *= 2 * sinf(0.7f * time) + 0.5f;
+        difuseColor.y *= 2 * sinf(0.2f * time) + 0.5f;
+        difuseColor.z *= 2 * sinf(0.4f * time) + 0.5f;
+        shader_program.SetUnifiorm("light.ambient",  0.2f, 0.2f, 0.2f);
+        shader_program.SetUnifiorm("light.diffuse",  glm::value_ptr(difuseColor)); // darken diffuse light a bit
+        shader_program.SetUnifiorm("light.specular", 1.0f, 1.0f, 1.0f);
+
+        float angle = 0.0f;
         for (auto& pos : cubePositions) {
             glm::mat4 model(1.0f);
             model = glm::translate(model, pos);
-            shader_program.SetUnifiorm("model", glm::value_ptr(model));
+            model = glm::rotate(model, glm::radians(angle), {0.5f, 0.0f, 1.0f});
+            shader_program.SetUnifiormMatrix("model", glm::value_ptr(model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            angle += 20.0f;
         }
+
+        light_shp.Use();
+        light_shp.SetUnifiormMatrix("projection", glm::value_ptr(projection));
+        light_shp.SetUnifiormMatrix("view", glm::value_ptr(view));
+        light_shp.SetUnifiormMatrix("model", glm::value_ptr(model_light));
+        light_shp.SetUnifiorm("color", glm::value_ptr(difuseColor));
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
