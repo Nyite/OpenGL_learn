@@ -144,6 +144,7 @@ int main() {
         view = camera.GetViewMatrix();
 
         shader_program.Use();
+        shader_program.SetUnifiorm("eyePos", glm::value_ptr(camera.GetPosition()));
         VAO.Bind();
 
         shader_program.SetUnifiormMatrix("projection", glm::value_ptr(projection));

@@ -59,6 +59,10 @@ class TCamera {
         return glm::lookAt(pos, pos + direction, {0.0f, 1.0f, 0.0f});
     }
 
+    glm::vec3 GetPosition() const noexcept {
+        return pos;
+    }
+
   private:
     glm::vec3 pos;
     glm::vec3 direction;
