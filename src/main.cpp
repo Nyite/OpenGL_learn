@@ -125,7 +125,7 @@ int main() {
 
     glm::vec3 light_color(1.0f, 1.0f, 1.0f);
     glm::vec3 coral(1.0f, 0.5f, 0.31f);
-    glm::vec3 light_pos({0.0f, 2.0f, 0.0f});
+    glm::vec3 light_pos({0.0f, 2.0f, -1.0f});
 
     shader_program.Use();
     shader_program.SetUnifiorm("lightColor", glm::value_ptr(light_color));
