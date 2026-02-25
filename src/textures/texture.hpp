@@ -6,16 +6,16 @@
 
 class TTexture {
   public:
-    TTexture(const char* file_name, GLenum image_format, GLenum texture_unit) {
+    TTexture(const char* file_name, GLenum image_format, GLenum texture_unit) : texture_unit_(texture_unit) {
         int wigth, height, channels;
         stbi_set_flip_vertically_on_load(true);
         unsigned char* image = stbi_load(file_name, &wigth, &height, &channels, 0);
         if (!image) {
-            throw std::runtime_error{fmt::format("Failed to load texture {} from file {}", texture_unit, file_name)};
+            throw std::runtime_error{fmt::format("Failed to load texture {} from file {}", texture_unit_, file_name)};
         }
 
         glGenTextures(1, &id_);
-        glActiveTexture(texture_unit);
+        glActiveTexture(texture_unit_);
         glBindTexture(GL_TEXTURE_2D, id_);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -33,6 +33,10 @@ class TTexture {
 
     constexpr GLuint GetId() const noexcept {
         return id_;
+    }
+
+    GLint GetUniformIndex() const noexcept {
+        return texture_unit_ - GL_TEXTURE0;
     }
 
     void Bind() const {
